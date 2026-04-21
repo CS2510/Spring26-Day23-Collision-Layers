@@ -127,43 +127,31 @@ class Scene {
     //All the collisions involving rigid bodies
     const rigidBodyCollisions = []
 
-    if (Engine.collisionLayers.length == 0) {
-      for (let i = 0; i < collidables.length; i++) {
-        for (let j = i + 1; j < collidables.length; j++) {
+
+    for (let i = 0; i < collidables.length; i++) {
+      for (let j = i + 1; j < collidables.length; j++) {
+        if (Engine.collisionLayers.length == 0 || Engine.collisionLayers.find(c => c[0] == collidables[i].layer && c[1] == collidables[j].layer)) {
           const one = collidables[i]
           const two = collidables[j]
-          if (!one.getComponent(RigidBody) && !two.getComponent(RigidBody))
-            continue
+
+          //Don't look for collisions if neither has a rigid body
+          if (!one.getComponent(RigidBody) && !two.getComponent(RigidBody)) continue
+
+          //Get collision information
           const result = Collisions.isCollisionGameObjectGameObject(one, two)
-          if (!result)
-            continue
+
+          //If there was no collision, then we're done
+          if (!result) continue
+
+          //Generate a collision information object with the game object with a lower id in position one
           const collision = one.id < two.id ? { one: one, two: two, result: result } : { one: two, two: one, result: result.times(-1) }
+
+          //Add the collision information to the list of collisions for this frame
           activeCollisions.push(collision)
         }
       }
     }
-    else {
-      for (const collisionPair of Engine.collisionLayers) {
-        for (const firstPairItem of this.gameObjects.filter(go => go.layer == collisionPair[0])) {
-          for (const secondPairItem of this.gameObjects.filter(go => go.layer == collisionPair[1])) {
 
-            const one = firstPairItem
-            const two = secondPairItem
-            if (one == two)
-              continue
-            if (collisionPair[0] == collisionPair[1] && collisionPair[0].indexOf(firstPairItem) >= collisionPair[1].indexOf(secondPairItem))
-              continue
-            if (!one.getComponent(RigidBody) && !two.getComponent(RigidBody))
-              continue
-            const result = Collisions.isCollisionGameObjectGameObject(one, two)
-            if (!result)
-              continue
-            const collision = one.id < two.id ? { one: one, two: two, result: result } : { one: two, two: one, result: result.times(-1) }
-            activeCollisions.push(collision)
-          }
-        }
-      }
-    }
 
     for (const collision of activeCollisions) {
       let type = "onTrigger"
